@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 Week Year Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Custom checkbox */
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #4f46e5;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-checkbox:checked {
+            background-color: #4f46e5;
+        }
+        .custom-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            left: 3px;
+            top: -1px;
+        }
+        
+        /* Animation for tasks */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-item {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .print-section {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold text-indigo-700">12 Week Year Planner</h1>
+                <p class="text-gray-600">Plan your year in 12-week cycles for maximum productivity</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="print-btn" class="no-print bg-white hover:bg-gray-100 text-indigo-700 font-medium py-2 px-4 border border-indigo-300 rounded-lg shadow-sm flex items-center">
+                    <i class="fas fa-print mr-2"></i> Print
+                </button>
+                <button id="new-cycle-btn" class="no-print bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm flex items-center">
+                    <i class="fas fa-plus mr-2"></i> New Cycle
+                </button>
+            </div>
+        </header>
+
+        <!-- Cycle Selector -->
+        <div class="no-print bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-xl font-semibold text-gray-800">Current 12-Week Cycle</h2>
+                    <p id="cycle-dates" class="text-gray-600">Select or create a cycle to begin</p>
+                </div>
+                <div class="flex items-center">
+                    <select id="cycle-select" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Select a cycle...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Vision & Goals -->
+            <div class="bg-white rounded-lg shadow-md p-6 print-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">Vision & Goals</h2>
+                    <button id="edit-vision-btn" class="text-indigo-600 hover:text-indigo-800">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div id="vision-view" class="prose max-w-none">
+                    <p id="vision-text" class="text-gray-700">What is your vision for this 12-week period? What are your most important goals?</p>
+                </div>
+                <div id="vision-edit" class="hidden">
+                    <textarea id="vision-input" class="w-full h-40 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Describe your vision and goals for this 12-week cycle..."></textarea>
+                    <div class="flex justify-end mt-2 space-x-2">
+                        <button id="cancel-vision-btn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                        <button id="save-vision-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Progress -->
+            <div class="bg-white rounded-lg shadow-md p-6 print-section">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Weekly Progress</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-3 gap-2 mb-4">
+                    <div class="bg-indigo-50 p-3 rounded-lg text-center">
+                        <div class="text-indigo-700 font-bold text-2xl" id="current-week">1</div>
+                        <div class="text-gray-600 text-sm">Current Week</div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg text-center">
+                        <div class="text-green-700 font-bold text-2xl" id="completed-tasks">0</div>
+                        <div class="text-gray-600 text-sm">Tasks Done</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg text-center">
+                        <div class="text-blue-700 font-bold text-2xl" id="weeks-left">12</div>
+                        <div class="text-gray-600 text-sm">Weeks Left</div>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-sm text-gray-500 mt-2"><span id="progress-percent">0</span>% of cycle completed</p>
+            </div>
+
+            <!-- Weekly Review -->
+            <div class="bg-white rounded-lg shadow-md p-6 print-section">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Weekly Review</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">What went well this week?</label>
+                        <textarea id="went-well" class="w-full h-20 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="List your successes..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">What could be improved?</label>
+                        <textarea id="improve" class="w-full h-20 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Identify areas for improvement..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Action items for next week</label>
+                        <textarea id="action-items" class="w-full h-20 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Plan your next steps..."></textarea>
+                    </div>
+                    <button id="save-review-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm">
+                        Save Weekly Review
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Planning -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6 print-section">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Weekly Planning</h2>
+                <div class="flex items-center mt-2 md:mt-0">
+                    <select id="week-select" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mr-2">
+                        <option value="1">Week 1</option>
+                        <option value="2">Week 2</option>
+                        <option value="3">Week 3</option>
+                        <option value="4">Week 4</option>
+                        <option value="5">Week 5</option>
+                        <option value="6">Week 6</option>
+                        <option value="7">Week 7</option>
+                        <option value="8">Week 8</option>
+                        <option value="9">Week 9</option>
+                        <option value="10">Week 10</option>
+                        <option value="11">Week 11</option>
+                        <option value="12">Week 12</option>
+                    </select>
+                    <button id="add-task-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Add Task
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- To Do -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-medium text-gray-800">To Do</h3>
+                        <span id="todo-count" class="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="todo-tasks" class="space-y-2 min-h-[100px]">
+                        <!-- Tasks will be added here -->
+                    </div>
+                </div>
+                
+                <!-- In Progress -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-medium text-gray-800">In Progress</h3>
+                        <span id="progress-count" class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="progress-tasks" class="space-y-2 min-h-[100px]">
+                        <!-- Tasks will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Completed -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-medium text-gray-800">Completed</h3>
+                        <span id="done-count" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span>
+                    </div>
+                    <div id="done-tasks" class="space-y-2 min-h-[100px]">
+                        <!-- Tasks will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Modal -->
+        <div id="task-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4" id="modal-title">Add New Task</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="task-title" class="block text-sm font-medium text-gray-700">Task Title</label>
+                            <input type="text" id="task-title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="task-description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea id="task-description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        </div>
+                        <div>
+                            <label for="task-due" class="block text-sm font-medium text-gray-700">Due Date</label>
+                            <input type="date" id="task-due" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="task-priority" class="block text-sm font-medium text-gray-700">Priority</label>
+                            <select id="task-priority" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+                    <button type="button" id="save-task-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save
+                    </button>
+                    <button type="button" id="cancel-task-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                    <button type="button" id="delete-task-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-red-100 text-base font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm hidden">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Cycle Modal -->
+        <div id="cycle-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+                <div class="p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Create New 12-Week Cycle</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="cycle-name" class="block text-sm font-medium text-gray-700">Cycle Name</label>
+                            <input type="text" id="cycle-name" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g. Q1 2023">
+                        </div>
+                        <div>
+                            <label for="cycle-start" class="block text-sm font-medium text-gray-700">Start Date</label>
+                            <input type="date" id="cycle-start" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="cycle-end" class="block text-sm font-medium text-gray-700">End Date</label>
+                            <input type="date" id="cycle-end" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-lg">
+                    <button type="button" id="save-cycle-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Create Cycle
+                    </button>
+                    <button type="button" id="cancel-cycle-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const cycleSelect = document.getElementById('cycle-select');
+            const cycleDates = document.getElementById('cycle-dates');
+            const currentWeek = document.getElementById('current-week');
+            const weeksLeft = document.getElementById('weeks-left');
+            const completedTasks = document.getElementById('completed-tasks');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            
+            // Task elements
+            const todoTasks = document.getElementById('todo-tasks');
+            const progressTasks = document.getElementById('progress-tasks');
+            const doneTasks = document.getElementById('done-tasks');
+            const todoCount = document.getElementById('todo-count');
+            const progressCount = document.getElementById('progress-count');
+            const doneCount = document.getElementById('done-count');
+            
+            // Modal elements
+            const taskModal = document.getElementById('task-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const taskTitle = document.getElementById('task-title');
+            const taskDescription = document.getElementById('task-description');
+            const taskDue = document.getElementById('task-due');
+            const taskPriority = document.getElementById('task-priority');
+            const saveTaskBtn = document.getElementById('save-task-btn');
+            const cancelTaskBtn = document.getElementById('cancel-task-btn');
+            const deleteTaskBtn = document.getElementById('delete-task-btn');
+            const addTaskBtn = document.getElementById('add-task-btn');
+            
+            // Cycle modal elements
+            const cycleModal = document.getElementById('cycle-modal');
+            const newCycleBtn = document.getElementById('new-cycle-btn');
+            const cycleName = document.getElementById('cycle-name');
+            const cycleStart = document.getElementById('cycle-start');
+            const cycleEnd = document.getElementById('cycle-end');
+            const saveCycleBtn = document.getElementById('save-cycle-btn');
+            const cancelCycleBtn = document.getElementById('cancel-cycle-btn');
+            
+            // Vision elements
+            const visionView = document.getElementById('vision-view');
+            const visionEdit = document.getElementById('vision-edit');
+            const visionText = document.getElementById('vision-text');
+            const visionInput = document.getElementById('vision-input');
+            const editVisionBtn = document.getElementById('edit-vision-btn');
+            const saveVisionBtn = document.getElementById('save-vision-btn');
+            const cancelVisionBtn = document.getElementById('cancel-vision-btn');
+            
+            // Review elements
+            const wentWell = document.getElementById('went-well');
+            const improve = document.getElementById('improve');
+            const actionItems = document.getElementById('action-items');
+            const saveReviewBtn = document.getElementById('save-review-btn');
+            
+            // Week selector
+            const weekSelect = document.getElementById('week-select');
+            
+            // Print button
+            const printBtn = document.getElementById('print-btn');
+            
+            // State variables
+            let currentCycle = null;
+            let editingTaskId = null;
+            let currentWeekNum = 1;
+            let tasks = {};
+            let cycles = [];
+            
+            // Initialize the app
+            init();
+            
+            function init() {
+                loadCycles();
+                setupEventListeners();
+                setDefaultDates();
+            }
+            
+            function setDefaultDates() {
+                // Set default dates for new cycle (today and 12 weeks from today)
+                const today = new Date();
+                const endDate = new Date();
+                endDate.setDate(today.getDate() + 84); // 12 weeks = 84 days
+                
+                // Format dates for input fields
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+                
+                cycleStart.value = formatDate(today);
+                cycleEnd.value = formatDate(endDate);
+                
+                // Set default due date for new tasks (today)
+                taskDue.value = formatDate(today);
+            }
+            
+            function setupEventListeners() {
+                // Cycle selection
+                cycleSelect.addEventListener('change', handleCycleSelect);
+                
+                // Task modal
+                addTaskBtn.addEventListener('click', () => openTaskModal());
+                saveTaskBtn.addEventListener('click', saveTask);
+                cancelTaskBtn.addEventListener('click', () => closeTaskModal());
+                deleteTaskBtn.addEventListener('click', deleteTask);
+                
+                // Cycle modal
+                newCycleBtn.addEventListener('click', () => openCycleModal());
+                saveCycleBtn.addEventListener('click', saveCycle);
+                cancelCycleBtn.addEventListener('click', () => closeCycleModal());
+                
+                // Vision editing
+                editVisionBtn.addEventListener('click', () => {
+                    visionView.classList.add('hidden');
+                    visionEdit.classList.remove('hidden');
+                    visionInput.value = visionText.textContent;
+                });
+                
+                saveVisionBtn.addEventListener('click', saveVision);
+                cancelVisionBtn.addEventListener('click', () => {
+                    visionView.classList.remove('hidden');
+                    visionEdit.classList.add('hidden');
+                });
+                
+                // Weekly review
+                saveReviewBtn.addEventListener('click', saveWeeklyReview);
+                
+                // Week selection
+                weekSelect.addEventListener('change', () => {
+                    currentWeekNum = parseInt(weekSelect.value);
+                    loadTasksForWeek(currentWeekNum);
+                });
+                
+                // Print button
+                printBtn.addEventListener('click', () => window.print());
+            }
+            
+            function loadCycles() {
+                // Load cycles from localStorage
+                const savedCycles = localStorage.getItem('12weekyear-cycles');
+                if (savedCycles) {
+                    cycles = JSON.parse(savedCycles);
+                    
+                    // Populate cycle select dropdown
+                    cycleSelect.innerHTML = '<option value="">Select a cycle...</option>';
+                    cycles.forEach(cycle => {
+                        const option = document.createElement('option');
+                        option.value = cycle.id;
+                        option.textContent = `${cycle.name} (${formatDateDisplay(cycle.startDate)} - ${formatDateDisplay(cycle.endDate)})`;
+                        cycleSelect.appendChild(option);
+                    });
+                    
+                    // If there's a current cycle in localStorage, select it
+                    const currentCycleId = localStorage.getItem('12weekyear-currentCycle');
+                    if (currentCycleId) {
+                        const cycle = cycles.find(c => c.id === currentCycleId);
+                        if (cycle) {
+                            cycleSelect.value = currentCycleId;
+                            handleCycleSelect({ target: { value: currentCycleId } });
+                        }
+                    }
+                }
+            }
+            
+            function handleCycleSelect(event) {
+                const cycleId = event.target.value;
+                if (!cycleId) {
+                    currentCycle = null;
+                    cycleDates.textContent = 'Select or create a cycle to begin';
+                    currentWeek.textContent = '0';
+                    weeksLeft.textContent = '0';
+                    completedTasks.textContent = '0';
+                    progressBar.style.width = '0%';
+                    progressPercent.textContent = '0';
+                    return;
+                }
+                
+                currentCycle = cycles.find(c => c.id === cycleId);
+                if (!currentCycle) return;
+                
+                // Save current cycle to localStorage
+                localStorage.setItem('12weekyear-currentCycle', cycleId);
+                
+                // Update cycle display
+                cycleDates.textContent = `${formatDateDisplay(currentCycle.startDate)} - ${formatDateDisplay(currentCycle.endDate)}`;
+                
+                // Calculate current week and progress
+                calculateCycleProgress();
+                
+                // Load vision for this cycle
+                loadVision();
+                
+                // Load weekly review for current week
+                loadWeeklyReview();
+                
+                // Load tasks for current week
+                loadTasksForWeek(currentWeekNum);
+            }
+            
+            function calculateCycleProgress() {
+                if (!currentCycle) return;
+                
+                const today = new Date();
+                const startDate = new Date(currentCycle.startDate);
+                const endDate = new Date(currentCycle.endDate);
+                
+                // Calculate total days in cycle
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                
+                // Calculate days passed
+                let daysPassed = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+                daysPassed = Math.max(0, Math.min(daysPassed, totalDays));
+                
+                // Calculate current week (1-12)
+                currentWeekNum = Math.min(12, Math.max(1, Math.ceil(daysPassed / 7)));
+                
+                // Update week selector
+                weekSelect.value = currentWeekNum;
+                
+                // Update display
+                currentWeek.textContent = currentWeekNum;
+                weeksLeft.textContent = 12 - currentWeekNum;
+                
+                // Calculate progress percentage
+                const progress = Math.round((daysPassed / totalDays) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = progress;
+            }
+            
+            function loadVision() {
+                if (!currentCycle) return;
+                
+                const savedVision = localStorage.getItem(`12weekyear-vision-${currentCycle.id}`);
+                if (savedVision) {
+                    visionText.textContent = savedVision;
+                } else {
+                    visionText.textContent = 'What is your vision for this 12-week period? What are your most important goals?';
+                }
+            }
+            
+            function saveVision() {
+                if (!currentCycle) return;
+                
+                const vision = visionInput.value.trim();
+                visionText.textContent = vision || 'What is your vision for this 12-week period? What are your most important goals?';
+                
+                localStorage.setItem(`12weekyear-vision-${currentCycle.id}`, vision);
+                
+                visionView.classList.remove('hidden');
+                visionEdit.classList.add('hidden');
+            }
+            
+            function loadWeeklyReview() {
+                if (!currentCycle || !currentWeekNum) return;
+                
+                const savedReview = localStorage.getItem(`12weekyear-review-${currentCycle.id}-${currentWeekNum}`);
+                if (savedReview) {
+                    const review = JSON.parse(savedReview);
+                    wentWell.value = review.wentWell || '';
+                    improve.value = review.improve || '';
+                    actionItems.value = review.actionItems || '';
+                } else {
+                    wentWell.value = '';
+                    improve.value = '';
+                    actionItems.value = '';
+                }
+            }
+            
+            function saveWeeklyReview() {
+                if (!currentCycle || !currentWeekNum) return;
+                
+                const review = {
+                    wentWell: wentWell.value.trim(),
+                    improve: improve.value.trim(),
+                    actionItems: actionItems.value.trim()
+                };
+                
+                localStorage.setItem(`12weekyear-review-${currentCycle.id}-${currentWeekNum}`, JSON.stringify(review));
+                
+                // Show success message
+                alert('Weekly review saved successfully!');
+            }
+            
+            function loadTasksForWeek(weekNum) {
+                if (!currentCycle) return;
+                
+                const savedTasks = localStorage.getItem(`12weekyear-tasks-${currentCycle.id}`);
+                if (savedTasks) {
+                    tasks = JSON.parse(savedTasks);
+                } else {
+                    tasks = {};
+                }
+                
+                // Initialize week if not exists
+                if (!tasks[weekNum]) {
+                    tasks[weekNum] = {
+                        todo: [],
+                        progress: [],
+                        done: []
+                    };
+                }
+                
+                // Clear current tasks
+                todoTasks.innerHTML = '';
+                progressTasks.innerHTML = '';
+                doneTasks.innerHTML = '';
+                
+                // Render tasks
+                renderTasks(tasks[weekNum].todo, 'todo');
+                renderTasks(tasks[weekNum].progress, 'progress');
+                renderTasks(tasks[weekNum].done, 'done');
+                
+                // Update counts
+                updateTaskCounts(weekNum);
+            }
+            
+            function renderTasks(taskList, status) {
+                const container = status === 'todo' ? todoTasks : 
+                                 status === 'progress' ? progressTasks : doneTasks;
+                
+                taskList.forEach((task, index) => {
+                    const taskElement = createTaskElement(task, index, status);
+                    container.appendChild(taskElement);
+                });
+            }
+            
+            function createTaskElement(task, index, status) {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task-item bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-start';
+                
+                // Priority indicator
+                let priorityClass = '';
+                if (task.priority === 'high') priorityClass = 'border-red-500';
+                else if (task.priority === 'medium') priorityClass = 'border-yellow-500';
+                else priorityClass = 'border-green-500';
+                
+                // Checkbox
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'custom-checkbox mt-1 mr-2';
+                checkbox.checked = status === 'done';
+                checkbox.addEventListener('change', () => toggleTaskStatus(task, index, status));
+                
+                // Task content
+                const content = document.createElement('div');
+                content.className = 'flex-1';
+                
+                const title = document.createElement('div');
+                title.className = 'font-medium text-gray-800';
+                title.textContent = task.title;
+                
+                const description = document.createElement('div');
+                description.className = 'text-sm text-gray-600 mt-1';
+                description.textContent = task.description;
+                
+                const dueDate = document.createElement('div');
+                dueDate.className = 'text-xs text-gray-500 mt-2 flex items-center';
+                dueDate.innerHTML = `<i class="far fa-calendar-alt mr-1"></i> Due: ${formatDateDisplay(task.dueDate)}`;
+                
+                content.appendChild(title);
+                if (task.description) content.appendChild(description);
+                content.appendChild(dueDate);
+                
+                // Edit button
+                const editBtn = document.createElement('button');
+                editBtn.className = 'text-gray-400 hover:text-indigo-600 ml-2';
+                editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                editBtn.addEventListener('click', () => openTaskModal(task, index, status));
+                
+                taskElement.appendChild(checkbox);
+                taskElement.appendChild(content);
+                taskElement.appendChild(editBtn);
+                
+                return taskElement;
+            }
+            
+            function toggleTaskStatus(task, index, currentStatus) {
+                if (!currentCycle || !tasks[currentWeekNum]) return;
+                
+                // Remove from current status
+                tasks[currentWeekNum][currentStatus].splice(index, 1);
+                
+                // Add to new status
+                let newStatus;
+                if (currentStatus === 'todo') {
+                    newStatus = 'progress';
+                    tasks[currentWeekNum][newStatus].push(task);
+                } else if (currentStatus === 'progress') {
+                    newStatus = 'done';
+                    tasks[currentWeekNum][newStatus].push(task);
+                } else {
+                    newStatus = 'todo';
+                    tasks[currentWeekNum][newStatus].push(task);
+                }
+                
+                // Save and reload
+                saveTasks();
+                loadTasksForWeek(currentWeekNum);
+                
+                // Update completed tasks count
+                updateCompletedTasksCount();
+            }
+            
+            function updateTaskCounts(weekNum) {
+                if (!tasks[weekNum]) return;
+                
+                todoCount.textContent = tasks[weekNum].todo.length;
+                progressCount.textContent = tasks[weekNum].progress.length;
+                doneCount.textContent = tasks[weekNum].done.length;
+                
+                // Update completed tasks in progress section
+                updateCompletedTasksCount();
+            }
+            
+            function updateCompletedTasksCount() {
+                if (!currentCycle || !tasks[currentWeekNum]) return;
+                
+                // Count all done tasks across all weeks
+                let totalDone = 0;
+                for (let week = 1; week <= 12; week++) {
+                    if (tasks[week] && tasks[week].done) {
+                        totalDone += tasks[week].done.length;
+                    }
+                }
+                
+                completedTasks.textContent = totalDone;
+            }
+            
+            function openTaskModal(task = null, index = null, status = null) {
+                if (task) {
+                    // Editing existing task
+                    modalTitle.textContent = 'Edit Task';
+                    taskTitle.value = task.title;
+                    taskDescription.value = task.description || '';
+                    taskDue.value = task.dueDate;
+                    taskPriority.value = task.priority || 'medium';
+                    
+                    editingTaskId = { index, status };
+                    deleteTaskBtn.classList.remove('hidden');
+                } else {
+                    // Adding new task
+                    modalTitle.textContent = 'Add New Task';
+                    taskTitle.value = '';
+                    taskDescription.value = '';
+                    taskDue.value = new Date().toISOString().split('T')[0];
+                    taskPriority.value = 'medium';
+                    
+                    editingTaskId = null;
+                    deleteTaskBtn.classList.add('hidden');
+                }
+                
+                taskModal.classList.remove('hidden');
+            }
+            
+            function closeTaskModal() {
+                taskModal.classList.add('hidden');
+            }
+            
+            function saveTask() {
+                if (!currentCycle || !taskTitle.value.trim()) return;
+                
+                const task = {
+                    title: taskTitle.value.trim(),
+                    description: taskDescription.value.trim(),
+                    dueDate: taskDue.value,
+                    priority: taskPriority.value
+                };
+                
+                if (editingTaskId) {
+                    // Update existing task
+                    const { index, status } = editingTaskId;
+                    tasks[currentWeekNum][status][index] = task;
+                } else {
+                    // Add new task
+                    if (!tasks[currentWeekNum]) {
+                        tasks[currentWeekNum] = {
+                            todo: [],
+                            progress: [],
+                            done: []
+                        };
+                    }
+                    tasks[currentWeekNum].todo.push(task);
+                }
+                
+                saveTasks();
+                loadTasksForWeek(currentWeekNum);
+                closeTaskModal();
+            }
+            
+            function deleteTask() {
+                if (!editingTaskId || !currentCycle) return;
+                
+                const { index, status } = editingTaskId;
+                tasks[currentWeekNum][status].splice(index, 1);
+                
+                saveTasks();
+                loadTasksForWeek(currentWeekNum);
+                closeTaskModal();
+            }
+            
+            function saveTasks() {
+                if (!currentCycle) return;
+                localStorage.setItem(`12weekyear-tasks-${currentCycle.id}`, JSON.stringify(tasks));
+            }
+            
+            function openCycleModal() {
+                cycleModal.classList.remove('hidden');
+            }
+            
+            function closeCycleModal() {
+                cycleModal.classList.add('hidden');
+            }
+            
+            function saveCycle() {
+                if (!cycleName.value.trim() || !cycleStart.value || !cycleEnd.value) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+                
+                const startDate = new Date(cycleStart.value);
+                const endDate = new Date(cycleEnd.value);
+                
+                // Validate dates (should be 12 weeks apart)
+                const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                if (daysDiff < 83 || daysDiff > 85) {
+                    alert('The cycle should be exactly 12 weeks (84 days) long');
+                    return;
+                }
+                
+                const cycle = {
+                    id: Date.now().toString(),
+                    name: cycleName.value.trim(),
+                    startDate: cycleStart.value,
+                    endDate: cycleEnd.value
+                };
+                
+                cycles.push(cycle);
+                localStorage.setItem('12weekyear-cycles', JSON.stringify(cycles));
+                
+                // Update UI
+                loadCycles();
+                cycleSelect.value = cycle.id;
+                handleCycleSelect({ target: { value: cycle.id } });
+                
+                closeCycleModal();
+            }
+            
+            function formatDateDisplay(dateString) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                return new Date(dateString).toLocaleDateString(undefined, options);
+            }
+        });
+    </script>
+</body>
+</html>
